@@ -6,7 +6,7 @@
     <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script>
-      // this is an object, not an array
+      // this is an object, to collect state of marker
       let marker_visible = { m0: false, m1: false, m2: false };
 
       // a component to handle marker events: found and lost
@@ -26,8 +26,10 @@
         },
       });
 
+      // a component to draw F character 
       AFRAME.registerComponent("draw-f", {
         init: function () {
+          // init geometry
           let geometry = new THREE.BufferGeometry();
 
           // vertex buffer
@@ -94,6 +96,7 @@
           ]);
 
           // itemSize = 3 because a vertex consists of three values (x, y, z)
+          // setup geometry
           geometry.setAttribute(
             "position",
             new THREE.BufferAttribute(vertices, 3)
@@ -106,29 +109,29 @@
             new THREE.Matrix4().makeScale(0.005, 0.005, 0.005)
           );
 
-          // create material -> drawF-1
+          // create material -> drawF-1 on marker 3
           let material_0 = new THREE.MeshLambertMaterial({ color: 0xff0000 });
           material_0.opacity = 1;
           this.mesh0 = new THREE.Mesh(geometry, material_0);
           this.origin0 = document.querySelector("#drawF-1").object3D;
           this.origin0.add(this.mesh0);
 
-          // create material -> drawF-1
+          // create material -> drawF-2 on marker 5
           let material_1 = new THREE.MeshLambertMaterial({ color: 0x0000ff });
           material_1.opacity = 1;
           this.mesh1 = new THREE.Mesh(geometry, material_1);
           this.origin1 = document.querySelector("#drawF-2").object3D;
           this.origin1.add(this.mesh1);
 
-          // create material -> drawF-1
+          // create material -> drawF-3 on marker 7
           let material_2 = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
           material_2.opacity = 1;
           this.mesh2 = new THREE.Mesh(geometry, material_2);
           this.origin2 = document.querySelector("#drawF-3").object3D;
           this.origin2.add(this.mesh2);
         },
+        // loop to check if the three markers are visible
         tick: function (time, deltaTime) {
-          // if both markers are visible, get their world positions and store in p0 and p1
           if (
             marker_visible["m0"] &&
             marker_visible["m1"] &&
@@ -145,9 +148,10 @@
         },
       });
 
+      // a component to draw line 
       AFRAME.registerComponent("draw-line", {
         init: function () {
-          // getting the DOM elements "#m0" and "#m1"
+          // getting the DOM elements "#m0", "#m1" and "#m2"
           this.el0 = document.querySelector("#m0");
           this.el1 = document.querySelector("#m1");
           this.el2 = document.querySelector("#m2");
@@ -173,11 +177,12 @@
           this.line1 = new THREE.Mesh(geometry, material);
           this.line2 = new THREE.Mesh(geometry, material);
 
-          // get the current object3D from the #drawHere inside #m0
+          // get the current object3D from each #drawLine
           this.origin1 = document.querySelector("#drawLine1").object3D;
           this.origin2 = document.querySelector("#drawLine2").object3D;
           this.origin3 = document.querySelector("#drawLine3").object3D;
 
+          // get the current object3D from the modelCenter
           this.modelCenter = document.querySelector("#modelCenter").object3D;
 
           // add the line to the origin object3D (located at #drawHere which is #m0)
@@ -186,9 +191,8 @@
           this.origin3.add(this.line2);
         },
 
-        // loop to check if the two markers are visible
+        // loop to check if the three markers are visible
         tick: function (time, deltaTime) {
-          // if both markers are visible, get their world positions and store in p0 and p1
           if (
             marker_visible["m0"] &&
             marker_visible["m1"] &&
@@ -198,24 +202,27 @@
             this.el1.object3D.getWorldPosition(this.p1);
             this.el2.object3D.getWorldPosition(this.p2);
 
-            // compute the distance from p0 to p1
+            // compute the distance 
             let distance1 = this.p0.distanceTo(this.p1);
             let distance2 = this.p1.distanceTo(this.p2);
             let distance3 = this.p2.distanceTo(this.p0);
 
-            // orient the frame of reference to look at p1 (+z direction point at p1)
+            // orient the frame of reference to look at each point [p1, p2, p3]
             this.origin1.lookAt(this.p1);
             this.origin2.lookAt(this.p2);
             this.origin3.lookAt(this.p0);
 
-            // set the scale of the line
+            // set the scale of the lines
             this.line0.scale.set(1, 1, distance1);
             this.line1.scale.set(1, 1, distance2);
             this.line2.scale.set(1, 1, distance3);
 
+            //init Triangle to compute center
             let tri = new THREE.Triangle(this.p0, this.p1, this.p2);
             let center = new THREE.Vector3();
             tri.getMidpoint(center);
+
+            //setup model position to center of triangle
             this.modelCenter.position.x = center.x;
             this.modelCenter.position.y = center.y;
             this.modelCenter.position.z = center.z;
@@ -224,12 +231,16 @@
             this.line0.visible = true;
             this.line1.visible = true;
             this.line2.visible = true;
+
+            //make model visible
             this.modelCenter.visible = true;
           } else {
             // if any marker is not visible, hide the line
             this.line0.visible = false;
             this.line1.visible = false;
             this.line2.visible = false;
+
+            //hide model
             this.modelCenter.visible = false;
           }
         },
